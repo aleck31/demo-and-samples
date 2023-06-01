@@ -1,30 +1,32 @@
-# This example uses the sounddevice library to get an audio stream from the microphone. 
-# The dependency of the project can be installed with pip:
-# `pip install amazon-transcribe sounddevice`
-import asyncio
 import os
+import asyncio
 import sounddevice
-from amazon_transcribe.client import TranscribeStreamingClient
+from pydub.playback import play
 from amazon_transcribe.handlers import TranscriptResultStreamHandler
 from amazon_transcribe.model import TranscriptEvent
+from amazon_transcribe.client import TranscribeStreamingClient
+from modules.polly import polly_read
+from modules.translate import translate_txt
 
 
 # Setup up demo region
-DEMO_REGION = 'cn-northwest-1'
-# DEMO_REGION = 'us-east-1'
+DEMO_REGION = 'us-east-1'
+# DEMO_REGION = 'cn-northwest-1'
+
 # language code value set: zh-CN, zh-HK, en-US, en-GB, ar-AE, ar-SA, fi-FI, pl-PL, no-NO, nl-NL, pt-PT, 
 # es-ES, th-TH, de-DE, it-IT, fr-FR, ko-KR, hi-IN, en-AU, sv-SE, pt-BR, ja-JP, ca-ES, es-US, fr-CA, 
 SOURCE_LANGCODE = 'zh-CN'
+TARGET_LANGCODE = 'en-US'
 
 # Be sure to use the correct parameters for the audio stream that matches
 # the audio formats described for the source language you'll be using:
 # https://docs.aws.amazon.com/transcribe/latest/dg/streaming.html
 SAMPLE_RATE = 16000
+READ_CHUNK = 1024
 CHUNK_SIZE = 1024 * 4
-
-CHANNEL_NUMS = 1
-AUDIO_PATH = 'output-audio/test.mp3'
 BYTES_PER_SAMPLE = 2
+CHANNEL_NUMS = 1
+# AUDIO_PATH = 'output-audio/test.mp3'
 
 
 """
@@ -45,7 +47,11 @@ class MyEventHandler(TranscriptResultStreamHandler):
             else:
                 # add a mark for each segment end
                 print('🔚')
-
+                first_lang_text = result.alternatives[0].transcript
+                second_lang_text = translate_txt(DEMO_REGION, first_lang_text, SOURCE_LANGCODE, TARGET_LANGCODE)
+                sound = polly_read(DEMO_REGION, second_lang_text)
+                # Need ffmpeg to support mp3 format
+                play(sound)
 
 
 async def mic_stream():
@@ -80,7 +86,7 @@ async def write_chunks(stream):
     await stream.input_stream.end_stream()
 
 
-async def basic_transcribe():
+async def transcribe_n_translate():
     client = TranscribeStreamingClient(region=DEMO_REGION)
 
     # Start transcription to generate async stream
@@ -95,6 +101,10 @@ async def basic_transcribe():
     await asyncio.gather(write_chunks(stream), handler.handle_events())
 
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(basic_transcribe())
-loop.close()
+def main():
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(transcribe_n_translate())
+    loop.close()
+
+if __name__ == '__main__':
+    main()

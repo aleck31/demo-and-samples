@@ -1,11 +1,22 @@
-## Readme for transcribe-mic script
+
+
+### How to use
+
+
+```shell
+$ python ./transcribe-mic.py
+
+$ python ./polly-play.py
+```
+
+### Use transcribe-mic script in China Region
 
 > If you use the transcribe service in China Region, please refer to following 
 > instructions to add support for the endpoint in China.
 
 > file path: amazon_transcribe/endpoints.py
 
-```
+```python
 # class _TranscribeRegionEndpointResolver(BaseEndpointResolver):
 #     async def resolve(self, region: str) -> str:
 #         """Apply region to transcribe uri template."""
