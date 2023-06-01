@@ -1,5 +1,1 @@
 boto3
-amazon-transcribe
-sounddevice
-pydub
-pyaudio
