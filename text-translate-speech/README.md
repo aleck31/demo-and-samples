@@ -1,5 +1,5 @@
 
-This demo app monitor the voice of the microphone, use Amazon Transcribe convert the speech into text, then use Amazon Translate service translate it to a second language, finally call the Amazon Polly to read the translated text.
+This a simultaneous interpretation demo app, which monitor the voice of the client's microphone, use Amazon Transcribe convert the speech into text, then use Amazon Translate service translate it to a second language, finally call the Amazon Polly to read the translated text.
 
 
 
@@ -21,6 +21,10 @@ $ python ./app.py
 
 ### Sample output
 ```shell
-今天星期五
-🔚
+🔛 Say something 
+👂 Listening ...
+
+今天星期五 🔚
+translate from zh-CN to en-US
+📢 
 ```

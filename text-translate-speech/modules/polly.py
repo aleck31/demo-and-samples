@@ -6,17 +6,18 @@ import os
 import sys
 from tempfile import gettempdir
 from pydub import AudioSegment
+from pydub.playback import play
 
 
 
 TEST_TXT="Amazon Polly 使用深度学习技术来合成听起来自然的人类语音，让您可以将文章转换为语音。"
 
-def polly_read(region, input_text): 
+def polly_play(region, input_text): 
 
-    polly = boto3.client('polly', region_name=region)
+    client = boto3.client('polly', region_name=region)
 
     try:
-        response = polly.synthesize_speech(
+        response = client.synthesize_speech(
             Text=input_text, 
             # Support format: mp3, pcm, ogg_vorbis, json
             OutputFormat='mp3',
@@ -42,7 +43,11 @@ def polly_read(region, input_text):
                 print(error)
                 sys.exit(-1)
         sound = AudioSegment.from_file(output, 'mp3')
-        return sound
+        # return sound
+        # Need ffmpeg to support mp3 format
+        print('📢')
+        play(sound)
+
     else:
         # The response didn't contain audio data, exit gracefully
         print("Could not stream audio")

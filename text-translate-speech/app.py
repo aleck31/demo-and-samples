@@ -1,16 +1,16 @@
 import os
+import sys
 import asyncio
 import sounddevice
-from pydub.playback import play
 from amazon_transcribe.handlers import TranscriptResultStreamHandler
 from amazon_transcribe.model import TranscriptEvent
 from amazon_transcribe.client import TranscribeStreamingClient
-from modules.polly import polly_read
+from modules.polly import polly_play
 from modules.translate import translate_txt
 
 
 # Setup up demo region
-DEMO_REGION = 'us-east-1'
+DEMO_REGION = 'ap-southeast-1'
 # DEMO_REGION = 'cn-northwest-1'
 
 # language code value set: zh-CN, zh-HK, en-US, en-GB, ar-AE, ar-SA, fi-FI, pl-PL, no-NO, nl-NL, pt-PT, 
@@ -43,15 +43,15 @@ class MyEventHandler(TranscriptResultStreamHandler):
                 for alt in result.alternatives:
                     #'​clear​' for Linux&Mac
                     os.system('cls')
-                    print(alt.transcript)
+                    print(f'{alt.transcript} 🔚')
             else:
-                # add a mark for each segment end
-                print('🔚')
-                first_lang_text = result.alternatives[0].transcript
-                second_lang_text = translate_txt(DEMO_REGION, first_lang_text, SOURCE_LANGCODE, TARGET_LANGCODE)
-                sound = polly_read(DEMO_REGION, second_lang_text)
-                # Need ffmpeg to support mp3 format
-                play(sound)
+                # actions to perform when get a partial result 
+                print(f'translate from {SOURCE_LANGCODE} to {TARGET_LANGCODE}')
+                source_text = result.alternatives[0].transcript
+                # translate text content
+                target_text = translate_txt(DEMO_REGION, source_text, SOURCE_LANGCODE, TARGET_LANGCODE)
+                # read out the returned content
+                polly_play(DEMO_REGION, target_text)
 
 
 async def mic_stream():
@@ -73,10 +73,10 @@ async def mic_stream():
     # Initiate the audio stream and asynchronously yield the audio chunks
     # as they become available.
     with stream:
+        print('👂 Listening ...')
         while True:
             indata, status = await input_queue.get()
             yield indata, status
-
 
 async def write_chunks(stream):
     # This connects the raw audio chunks generator coming from the microphone
@@ -91,9 +91,14 @@ async def transcribe_n_translate():
 
     # Start transcription to generate async stream
     stream = await client.start_stream_transcription(
-        language_code=SOURCE_LANGCODE,
+        # language_code=SOURCE_LANGCODE,
+        identify_language=True,
+        language_options=['zh-CN', 'en-US'],
+        preferred_language=SOURCE_LANGCODE,      
         media_sample_rate_hz=SAMPLE_RATE,
-        media_encoding="pcm"
+        media_encoding="pcm",
+        enable_partial_results_stabilization=True,
+        partial_results_stability='low'
     )
 
     # Instantiate our handler and start processing events
@@ -102,8 +107,11 @@ async def transcribe_n_translate():
 
 
 def main():
+    print('🔛 Say something ...')
     loop = asyncio.new_event_loop()
-    loop.run_until_complete(transcribe_n_translate())
+    # loop.run_until_complete(transcribe_n_translate())
+    tasks = loop.create_task(transcribe_n_translate())
+    loop.run_until_complete(tasks)
     loop.close()
 
 if __name__ == '__main__':
