@@ -1,5 +1,4 @@
 import os
-import sys
 import asyncio
 import sounddevice
 from amazon_transcribe.handlers import TranscriptResultStreamHandler
@@ -73,10 +72,11 @@ async def mic_stream():
     # Initiate the audio stream and asynchronously yield the audio chunks
     # as they become available.
     with stream:
-        print('👂 Listening ...')
+        print('🎙 Listening ...')
         while True:
             indata, status = await input_queue.get()
             yield indata, status
+
 
 async def write_chunks(stream):
     # This connects the raw audio chunks generator coming from the microphone
@@ -89,9 +89,19 @@ async def write_chunks(stream):
 async def transcribe_n_translate():
     client = TranscribeStreamingClient(region=DEMO_REGION)
 
-    # Start transcription to generate async stream
+    # Start transcription to generate async stream   
     stream = await client.start_stream_transcription(
-        # language_code=SOURCE_LANGCODE,
+        language_code=SOURCE_LANGCODE,  
+        media_sample_rate_hz=SAMPLE_RATE,
+        media_encoding="pcm",
+        enable_partial_results_stabilization=True,
+        partial_results_stability='medium'
+    )
+
+    '''
+    # Enables automatic language identification (TBD)
+    # https://docs.aws.amazon.com/transcribe/latest/APIReference/API_streaming_StartStreamTranscription.html
+    stream = await client.start_stream_transcription(
         identify_language=True,
         language_options=['zh-CN', 'en-US'],
         preferred_language=SOURCE_LANGCODE,      
@@ -100,19 +110,24 @@ async def transcribe_n_translate():
         enable_partial_results_stabilization=True,
         partial_results_stability='low'
     )
+    '''
 
     # Instantiate our handler and start processing events
     handler = MyEventHandler(stream.output_stream)
     await asyncio.gather(write_chunks(stream), handler.handle_events())
-
 
 def main():
     print('🔛 Say something ...')
     loop = asyncio.new_event_loop()
     # loop.run_until_complete(transcribe_n_translate())
     tasks = loop.create_task(transcribe_n_translate())
-    loop.run_until_complete(tasks)
-    loop.close()
-
+    try:
+        loop.run_until_complete(tasks)
+        loop.close()
+    except KeyboardInterrupt:
+        print('🛑 Stop listening.')
+    except Exception as ex:
+        print(str(ex))
+    
 if __name__ == '__main__':
     main()

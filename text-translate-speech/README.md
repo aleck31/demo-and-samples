@@ -16,15 +16,47 @@ This a simultaneous interpretation demo app, which monitor the voice of the clie
 
 
 ```shell
+# run it
 $ python ./app.py
+
+# stop it
+Ctrl + C
 ```
 
 ### Sample output
 ```shell
 🔛 Say something 
-👂 Listening ...
+🎙 Listening ...
 
 今天星期五 🔚
 translate from zh-CN to en-US
 📢 
+
+#Ctrl+C
+🛑 Stop listening.
+```
+
+
+### About China Region support
+
+> Due to the lack of Amazon translate services this demo cannot run in China Region.
+> If you're trying to use transcribe function in China Region, please refer to  
+> following instructions to add support for China region endpoint.
+
+> file path: amazon_transcribe/endpoints.py
+
+```python
+# class _TranscribeRegionEndpointResolver(BaseEndpointResolver):
+#     async def resolve(self, region: str) -> str:
+#         """Apply region to transcribe uri template."""
+#         return f"https://transcribestreaming.{region}.amazonaws.com"
+
+# add China region endpoint support
+class _TranscribeRegionEndpointResolver(BaseEndpointResolver):
+    async def resolve(self, region: str) -> str:
+        """Apply region to transcribe uri template."""
+        if region.startswith('cn'):
+            return f"https://transcribestreaming.{region}.amazonaws.com.cn"
+        else:
+            return f"https://transcribestreaming.{region}.amazonaws.com"
 ```
