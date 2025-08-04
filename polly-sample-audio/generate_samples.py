@@ -4,18 +4,57 @@ from pathlib import Path
 import boto3
 
 
-DEMO_REGION = 'ap-southeast-1'
-# DEMO_REGION = 'cn-northwest-1'
-AUDIO_OUTPUT = './samples/'
-ENGINES = ['standard', 'neural']
-# neural not supported in China Region
-# ENGINES = ['standard']
+DEMO_REGION = 'us-east-1'
+# Alternative regions for different engine support:
+# DEMO_REGION = 'eu-central-1'  # Supports: standard, neural, generative
+# DEMO_REGION = 'us-west-2'     # Supports: standard, neural, generative
+# DEMO_REGION = 'ap-southeast-1' # Supports: standard, neural only
+# DEMO_REGION = 'cn-northwest-1' # Supports: standard only (China region)
+
+AUDIO_OUTPUT = './audio_samples'
+
+# All four engines (us-east-1 supports all engines)
+ENGINES = ['standard', 'neural', 'generative', 'long-form']
+
+# For other regions, comment out unsupported engines:
+# China Region: ENGINES = ['standard']
+# Most regions: ENGINES = ['standard', 'neural']
+# us-east-1, eu-central-1, us-west-2: ENGINES = ['standard', 'neural', 'generative']
+# Only us-east-1: ENGINES = ['standard', 'neural', 'generative', 'long-form']
+
+
+def print_engine_info():
+    """Print information about the engines being used"""
+    print("🎙️  Amazon Polly TTS Engine Information:")
+    print("=" * 50)
+    
+    engine_info = {
+        'standard': '📢 Standard: Traditional TTS, lowest cost',
+        'neural': '🧠 Neural: More natural voices, moderate cost',
+        'generative': '🤖 Generative: Most human-like, conversational (Higher cost)',
+        'long-form': '📚 Long-form: Optimized for long content, premium quality (Highest cost)'
+    }
+    
+    for engine in ENGINES:
+        if engine in engine_info:
+            print(f"  {engine_info[engine]}")
+    
+    # Cost warning for premium engines
+    premium_engines = [e for e in ENGINES if e in ['generative', 'long-form']]
+    if premium_engines:
+        print("\n⚠️  WARNING: Premium engines have significantly higher costs!")
+        print(f"   Premium engines in use: {', '.join(premium_engines)}")
+        print("   Check AWS Polly pricing: https://aws.amazon.com/polly/pricing/")
+    
+    print(f"\n🌍 Region: {DEMO_REGION}")
+    print(f"📁 Output directory: {AUDIO_OUTPUT}")
+    print("=" * 50)
 
 
 def ensure_required_path(inputs):
     required_path = inputs['audio_dest']    
     for engine in ENGINES:
-        Path(required_path+engine).mkdir(parents=True, exist_ok=True)
+        Path(f"{required_path}/{engine}").mkdir(parents=True, exist_ok=True)
 
 def define_data(client, inputs, engine, data):
     data[engine] = {}
@@ -95,6 +134,9 @@ def run(client, inputs):
 
 
 if __name__ == "__main__":
+    # Print engine information before starting
+    print_engine_info()
+    
     inputs = {
         'gen_data': True,
         'languages_file_ext': '.txt',
